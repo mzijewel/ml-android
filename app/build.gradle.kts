@@ -67,6 +67,6 @@ dependencies {
     debugImplementation("androidx.compose.ui:ui-tooling")
     debugImplementation("androidx.compose.ui:ui-test-manifest")
 
-    implementation ("org.pytorch:pytorch_android:1.10.0")
-    implementation ("org.pytorch:pytorch_android_torchvision:1.10.0")
+    implementation ("org.pytorch:pytorch_android:1.12.1")
+    implementation ("org.pytorch:pytorch_android_torchvision:1.12.1")
 }

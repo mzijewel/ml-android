@@ -11,10 +11,10 @@ import java.io.IOException
 
 object Utils {
     // Helper method to load model file from assets directory
-    fun assetFilePath(context: Context, assetName: String?): String? {
+    fun assetFilePath(context: Context, assetName: String): String? {
         val file = File(context.filesDir, assetName)
         try {
-            context.assets.open(assetName!!).use { inStream ->
+            context.assets.open(assetName).use { inStream ->
                 FileOutputStream(file).use { os ->
                     val buffer = ByteArray(4 * 1024)
                     var read: Int
