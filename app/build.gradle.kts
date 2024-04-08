@@ -1,6 +1,7 @@
 plugins {
     id("com.android.application")
     id("org.jetbrains.kotlin.android")
+    id("com.chaquo.python")
 }
 
 android {
@@ -18,6 +19,25 @@ android {
         vectorDrawables {
             useSupportLibrary = true
         }
+
+        chaquopy{
+            defaultConfig{
+                version= "3.8" // python version 3.11 is not working for torch
+
+                pip{
+                    install("numpy")
+                    install("opencv-python")
+                    install("torch")
+                    install("pillow")
+                }
+            }
+        }
+
+        ndk {
+            // On Apple silicon, you can omit x86_64.
+            abiFilters += listOf("arm64-v8a", "x86_64","x86")
+        }
+
     }
 
     buildTypes {
