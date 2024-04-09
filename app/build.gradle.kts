@@ -27,15 +27,17 @@ android {
                 pip{
                     install("numpy")
                     install("opencv-python")
-                    install("torch")
+//                    install("torch")
                     install("pillow")
+                    install("ultralytics")
                 }
+
             }
         }
 
         ndk {
             // On Apple silicon, you can omit x86_64.
-            abiFilters += listOf("arm64-v8a", "x86_64","x86")
+            abiFilters += listOf("arm64-v8a",) // x86_64,x86
         }
 
     }
@@ -86,4 +88,6 @@ dependencies {
     androidTestImplementation("androidx.compose.ui:ui-test-junit4")
     debugImplementation("androidx.compose.ui:ui-tooling")
     debugImplementation("androidx.compose.ui:ui-test-manifest")
+
+    implementation ("io.coil-kt:coil-compose:2.5.0")
 }

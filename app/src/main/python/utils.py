@@ -8,32 +8,39 @@ from os.path import dirname, join
 from com.chaquo.python import Python
 import io
 import base64
+import ultralytics
+from ultralytics import YOLO
+import time
+
+# /data/user/0/dev.jewel.machinelearning/files
+DIR_FILES=str(Python.getPlatform().getApplication().getFilesDir()) 
 
 def get_info():
     ops=platform.system()
-    rls=platform.release()
     pv=sys.version
     npv=np.__version__
     cvv=cv2.__version__
     tv=torch.__version__
-    cd=os.getcwd()
+    
     pilv=PIL.__version__
-    dir=str(Python.getPlatform().getApplication().getFilesDir())
+    ultv=ultralytics.__version__
+
 
     return f'''
-        cur dir: {dir}
+        cur dir: {DIR_FILES}
         os: {ops}
         numpy: {npv}
         python: {pv[:6]}
         opencv: {cvv},
         torch: {tv}
         pillow: {pilv}
+        ultralytics: {ultv}
 
         '''
 
 def exec_code(code):
-    dir=str(Python.getPlatform().getApplication().getFilesDir())
-    filename=join(dirname(dir),'file.txt')
+
+    filename=join(dirname(DIR_FILES),'file.txt') 
 
     try:
         orginal_std=sys.stdout
@@ -50,13 +57,14 @@ def exec_code(code):
 
     return str(output)
 
-
-
-
-def sort(array):
-    data=list(array)
-    data=sorted(data,reverse=False)
+def read_file():
+    # src/main/python/test.txt
+    # /data/data/dev.jewel.machinelearning/files/chaquopy/AssetFinder/app/test.txt
+    filename=join(dirname(__file__),'test.txt')
+    with open(filename,'r',encoding='utf8',errors='ignore') as f:
+        data=f.read()
     return data
+
 
 def process_bitmap(bitmap_bytes):
     # Convert byte array to numpy array
@@ -72,10 +80,44 @@ def process_bitmap(bitmap_bytes):
     # Convert OpenCV image to PIL image
     pil_img = Image.fromarray(gray_img)
 
+    return pil_to_base64(pil_img)
+
+def pil_to_base64(img):
     # Convert PIL image back to byte array
     byte_arr = io.BytesIO()
-    pil_img.save(byte_arr, format='PNG')
+    img.save(byte_arr, format='PNG')
     byte_arr = byte_arr.getvalue()
     imgs_str=base64.b64encode(byte_arr)
+    return str(imgs_str,'utf8')
 
-    return ""+str(imgs_str,'utf8')
+def image_info(img_path):
+    img=Image.open(img_path)
+    nparray=np.array(img)
+    info=f"(H,W,C): {nparray.shape}"
+
+    return info
+
+def remove_bg(img_path):
+    st=time.time()
+    img=Image.open(img_path)
+    filename=join(dirname(__file__),'yolov8s-seg.pt')
+    model=YOLO(filename)
+    results=model(img)
+    mask=results[0].masks.data[0]
+    mask=(mask.numpy()*255).astype('uint8')
+    mask=Image.fromarray(mask).resize(img.size)
+    new_img=Image.new("RGBA",img.size,0)
+    new_img.paste(img,mask=mask)
+    filename=join(DIR_FILES,'nobg.png')
+    new_img.save(filename)
+    print(f'process took: {int((time.time()-st)*1000)}ms')
+    return filename
+
+
+def gray_image(img_path):
+    img=Image.open(img_path).convert("L")
+
+    filename=join(DIR_FILES,'gray.jpg')
+    img.save(filename)
+    return filename
+    

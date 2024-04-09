@@ -1,46 +1,50 @@
 package dev.jewel.machinelearning
 
-import android.graphics.Bitmap
-import android.graphics.BitmapFactory
+import android.net.Uri
 import android.os.Bundle
-import android.util.Base64
 import androidx.activity.ComponentActivity
+import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.compose.setContent
-import androidx.compose.foundation.Image
+import androidx.activity.result.PickVisualMediaRequest
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
+import androidx.compose.material3.Button
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.asImageBitmap
-import com.chaquo.python.PyObject
-import com.chaquo.python.Python
-import com.chaquo.python.android.AndroidPlatform
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
+import androidx.lifecycle.ViewModelProvider
+import coil.compose.AsyncImage
 import dev.jewel.machinelearning.ui.theme.MachineLearningTheme
-import java.io.ByteArrayOutputStream
 
 
 // https://www.youtube.com/watch?v=igJgXeV82b4
 // https://chaquo.com/chaquopy/doc/current/android.html
 
 class MainActivity : ComponentActivity() {
-    lateinit var module: PyObject
+    private lateinit var mainVm: MainVm
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
-        // load python
-        if (!Python.isStarted()) {
-            Python.start(AndroidPlatform(this))
-        }
-
-        // load python module
-        val python = Python.getInstance()
-        module = python.getModule("utils") // utils.py
-
-
-        val info = getInfo()
-        val grayBitmap = getGrayBitmap()
+        mainVm = ViewModelProvider(this)[MainVm::class.java]
+        mainVm.loadModel(this)
 
 
         setContent {
@@ -50,30 +54,92 @@ class MainActivity : ComponentActivity() {
                     modifier = Modifier.fillMaxSize(),
                     color = MaterialTheme.colorScheme.background
                 ) {
-                    Column {
-                        Text(text = info)
-                        Image(bitmap = grayBitmap.asImageBitmap(), contentDescription = "")
+                    var selectedImageUri by remember {
+                        mutableStateOf<Uri?>(null)
+                    }
+
+                    val imgInfo by mainVm.info.collectAsState()
+                    val grayImgPath by mainVm.grayImgPath.collectAsState()
+                    val nobgImgPath by mainVm.nobgImgPath.collectAsState()
+
+                    var imagePath by remember {
+                        mutableStateOf("")
+                    }
+                    val singlePhotoPickerLauncher = rememberLauncherForActivityResult(
+                        contract = ActivityResultContracts.PickVisualMedia(),
+                        onResult = { uri ->
+                            selectedImageUri = uri
+                            uri?.let {
+                                imagePath = it.toImagePath(this)
+                                mainVm.processImage(imagePath)
+                            }
+                        }
+                    )
+
+
+
+                    Column(
+                        modifier = Modifier
+                            .verticalScroll(rememberScrollState())
+                            .fillMaxSize()
+                    ) {
+                        Row {
+                            Button(onClick = {
+                                singlePhotoPickerLauncher.launch(
+                                    PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageOnly)
+                                )
+                            }) {
+                                Text(text = "Pick Image")
+                            }
+
+                            nobgImgPath?.let {
+                                Spacer(modifier = Modifier.width(8.dp))
+                                Button(onClick = {
+                                    grayImgPath?.let {
+                                        mainVm.saveImage(it)
+                                    }
+                                    nobgImgPath?.let {
+                                        mainVm.saveImage(it)
+                                    }
+                                }) {
+                                    Text(text = "Save")
+                                }
+                            }
+                        }
+                        Spacer(modifier = Modifier.height(10.dp))
+                        Row {
+                            AsyncImage(
+                                model = imagePath, contentDescription = "",
+                                modifier = Modifier.height(200.dp),
+                                contentScale = ContentScale.FillHeight
+                            )
+                            Spacer(modifier = Modifier.width(10.dp))
+                            Text(
+                                text = imgInfo,
+                                color = Color.Red,
+                                fontSize = 14.sp,
+                                modifier = Modifier.padding(all = 4.dp)
+                            )
+                        }
+                        Spacer(modifier = Modifier.height(10.dp))
+                        AsyncImage(
+                            model = grayImgPath,
+                            contentDescription = "",
+                            modifier = Modifier.height(200.dp),
+                            contentScale = ContentScale.FillHeight
+                        )
+                        Spacer(modifier = Modifier.height(10.dp))
+                        AsyncImage(
+                            model = nobgImgPath, contentDescription = "",
+                            modifier = Modifier.height(200.dp),
+                            contentScale = ContentScale.FillHeight
+                        )
+
                     }
 
                 }
             }
         }
-    }
 
-    fun getGrayBitmap(): Bitmap {
-        val bitmap = BitmapFactory.decodeStream(assets.open("cat.jpg"))
-        // Convert bitmap to byte array
-        val stream = ByteArrayOutputStream()
-        bitmap.compress(Bitmap.CompressFormat.PNG, 100, stream)
-        val byteArray = stream.toByteArray()
-        val ps = module["process_bitmap"]?.call(byteArray).toString()
-        val barray = Base64.decode(ps, Base64.DEFAULT)
-        return BitmapFactory.decodeByteArray(barray, 0, barray.size)
-    }
-
-    fun getInfo(): String {
-        val method = module["get_info"] // method name
-        val result = method?.call()
-        return result.toString()
     }
 }
