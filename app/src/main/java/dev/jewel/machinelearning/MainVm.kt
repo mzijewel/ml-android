@@ -68,11 +68,11 @@ class MainVm : ViewModel() {
     }
 
     private fun removeBg(path: String): String {
-        return module["remove_bg"]?.call(path).toString()
+        return module.callAttr("remove_bg", path).toString()
     }
 
     private fun grayBitmap(path: String): String {
-        return module["gray_image"]?.call(path).toString()
+        return module.callAttr("gray_image", path).toString()
     }
 
     private fun getInfo(): String {
