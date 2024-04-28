@@ -11,6 +11,7 @@ class MainActivity : ComponentActivity() {
 //        SimpleModel().run2(this)
 //        MobileNetDetect().run(this)
         ImageIdentityModel().runCifar10(this)
+//        SegmentModel().run(this)
     }
 
 }

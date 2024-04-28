@@ -11,14 +11,12 @@ import org.pytorch.torchvision.TensorImageUtils
 
 class ImageIdentityModel {
     // python: Cifar.py
-    // todo: predictions are not like as python, need to work on it
     fun runCifar10(context: Context) {
         // Load the PyTorch model from the assets folder
         val module = Module.load(Utils.assetFilePath(context, "m_cifar.pt"))
         val classes= arrayListOf("plane", "car", "bird", "cat", "deer", "dog",
             "frog", "horse", "ship", "truck")
-        val images = arrayListOf("plane.jpg", "car.jpeg","cat.jpg",
-            "deer.jpeg","dog.jpg", "hen.jpeg")
+        val images = arrayListOf("cat.jpg", "dog.jpg", "car.jpeg","deer.jpeg","hen.jpeg")
 
         for (img in images) {
             // Load and preprocess the input image
@@ -29,11 +27,11 @@ class ImageIdentityModel {
             val tensorImage: Tensor = TensorImageUtils.bitmapToFloat32Tensor(
                 resizedBitmap,
 //            TensorImageUtils.TORCHVISION_NORM_MEAN_RGB,
-                floatArrayOf(0.5f, 0.5f, 0.5f), // as normalized
-//                floatArrayOf(0f, 0f, 0f), // no mean
+//                floatArrayOf(0.5f, 0.5f, 0.5f), // as normalized
+                floatArrayOf(0f, 0f, 0f), // no mean
 //            TensorImageUtils.TORCHVISION_NORM_STD_RGB
-                floatArrayOf(0.5f, 0.5f, 0.5f),
-//                floatArrayOf(1f, 1f,1f), // no std
+//                floatArrayOf(0.5f, 0.5f, 0.5f),
+                floatArrayOf(1f, 1f,1f), // no std
             )
 
             // Perform inference
@@ -51,8 +49,18 @@ class ImageIdentityModel {
                     maxScoreIdx = i
                 }
             }
+
+            // Apply softmax to get probabilities
+            val probabilities = scores.map { Math.exp(it.toDouble()).toFloat() }
+            val sum = probabilities.sum()
+            val normalizedProbabilities = probabilities.map { it / sum }
+
+            // Find the class with the highest probability
+            val maxIndex = normalizedProbabilities.indices.maxByOrNull { normalizedProbabilities[it] } ?: -1
+            val maxProbability = normalizedProbabilities[maxIndex]
+
             val accuracy =  maxScore/classes.size.toFloat()*100
-            val ac= String.format("%.2f", accuracy)
+            val ac= String.format("%.2f", accuracy) // accuracy is not correct yet
             Log.d("PyTorch", "$img: ${classes[maxScoreIdx]}:${maxScoreIdx}")
         }
 
