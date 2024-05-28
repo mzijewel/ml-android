@@ -27,8 +27,10 @@ import androidx.compose.ui.unit.dp
 import androidx.core.app.ActivityCompat
 import androidx.core.content.ContextCompat
 import dev.jewel.machinelearning.ui.theme.MachineLearningTheme
+import org.tensorflow.lite.task.vision.classifier.Classifications
 
 class MainActivity : ComponentActivity() {
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         if (!hasCameraPermission()) {
@@ -38,14 +40,26 @@ class MainActivity : ComponentActivity() {
             MachineLearningTheme {
 
                 var classifications by remember {
-                    mutableStateOf(emptyList<Classification>())
+                    mutableStateOf(emptyList<Classifications>())
                 }
                 val analyzer = remember {
-                    LandmarkImageAnalyzer(
-                        classifier = TfLiteLandmarkClassifier(applicationContext),
-                        onResults = {
-                            classifications = it
-                        })
+                    ImageAnalyzer(
+                        classifier = ImageClassifierHelper(
+                            context = applicationContext,
+                            imageClassifierListener = object :
+                                ImageClassifierHelper.ClassifierListener {
+                                override fun onError(error: String) {
+                                }
+
+                                override fun onResults(
+                                    results: List<Classifications>?,
+                                    inferenceTime: Long
+                                ) {
+                                    classifications = results!!
+                                }
+
+                            })
+                    )
                 }
 
                 val controller = remember {
@@ -66,8 +80,8 @@ class MainActivity : ComponentActivity() {
                             .align(Alignment.TopCenter)
                     ) {
                         classifications.forEach {
-                            Text(
-                                text = "${it.name} ${(it.score * 100).toInt()}%",
+                            if (it.categories.isNotEmpty()) Text(
+                                text = "${it.categories[0].label} ${(it.categories[0].score * 100).toInt()}%",
                                 color = Color.Red,
                                 modifier = Modifier
                                     .fillMaxWidth()
