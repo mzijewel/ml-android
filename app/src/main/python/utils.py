@@ -13,7 +13,8 @@ from ultralytics import YOLO
 import time
 
 # /data/user/0/dev.jewel.machinelearning/files
-DIR_FILES=str(Python.getPlatform().getApplication().getFilesDir()) 
+DIR_FILES=str(Python.getPlatform().getApplication().getFilesDir())
+PY_DIR=dirname(__file__)
 
 def get_info():
     ops=platform.system()
@@ -120,4 +121,11 @@ def gray_image(img_path):
     filename=join(DIR_FILES,'gray.jpg')
     img.save(filename)
     return filename
-    
+
+def get_bitmap(img_name):
+    img_path=f'{PY_DIR}/data/img/{img_name}'
+    img=Image.open(img_path)
+    img_arr=io.BytesIO()
+    img.save(img_arr,format="JPEG")
+
+    return img_arr.getvalue()

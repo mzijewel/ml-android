@@ -61,6 +61,7 @@ class MainActivity : ComponentActivity() {
                     val imgInfo by mainVm.info.collectAsState()
                     val grayImgPath by mainVm.grayImgPath.collectAsState()
                     val nobgImgPath by mainVm.nobgImgPath.collectAsState()
+                    val bmpd by mainVm.bmpd.collectAsState()
 
                     var imagePath by remember {
                         mutableStateOf("")
@@ -83,6 +84,7 @@ class MainActivity : ComponentActivity() {
                             .verticalScroll(rememberScrollState())
                             .fillMaxSize()
                     ) {
+                        AsyncImage(model = bmpd, contentDescription = "")
                         Row {
                             Button(onClick = {
                                 singlePhotoPickerLauncher.launch(

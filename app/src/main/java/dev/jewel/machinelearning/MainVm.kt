@@ -2,6 +2,7 @@ package dev.jewel.machinelearning
 
 import android.content.Context
 import android.graphics.Bitmap
+import android.graphics.BitmapFactory
 import android.os.Environment
 import android.util.Log
 import androidx.lifecycle.ViewModel
@@ -25,10 +26,8 @@ class MainVm : ViewModel() {
     val info = MutableStateFlow("")
     val grayImgPath = MutableStateFlow<String?>(null)
     val nobgImgPath = MutableStateFlow<String?>(null)
+    val bmpd = MutableStateFlow<Bitmap?>(null)
 
-    init {
-        Log.e("TEST", "init vm")
-    }
 
     fun loadModel(context: Context) {
         viewModelScope.launch(Dispatchers.IO) {
@@ -38,8 +37,27 @@ class MainVm : ViewModel() {
             }
             val python = Python.getInstance()
             module = python.getModule("utils") // utils.py
+
+            getBitmapFromPython()
         }
 
+    }
+
+    fun loadCifarModel(context: Context){
+        viewModelScope.launch(Dispatchers.IO) {
+            Python.getInstance().getModule("cifar")["test_model"]?.call()
+        }
+    }
+    fun getBitmapFromPython() {
+        viewModelScope.launch(Dispatchers.IO) {
+            val time = measureTimeMillis {
+                val img = module.callAttr("get_bitmap", "cat.jpg").toJava(ByteArray::class.java)
+                val bmp = BitmapFactory.decodeByteArray(img, 0, img.size)
+                bmpd.emit(bmp)
+            }
+            Log.d("Python", "get bitmap time: $time")
+
+        }
     }
 
     fun processImage(path: String) {
